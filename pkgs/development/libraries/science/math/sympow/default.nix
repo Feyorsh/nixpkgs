@@ -1,17 +1,16 @@
-{
-  lib,
-  stdenv,
-  fetchFromGitLab,
-  makeWrapper,
-  which,
-  autoconf,
-  help2man,
-  file,
-  pari,
+{ lib, stdenv
+, fetchFromGitLab
+, fetchpatch
+, makeWrapper
+, which
+, autoconf
+, help2man
+, file
+, pari
 }:
 
 stdenv.mkDerivation rec {
-  version = "2.023.7";
+  version = "2.023.6";
   pname = "sympow";
 
   src = fetchFromGitLab {
@@ -19,10 +18,17 @@ stdenv.mkDerivation rec {
     owner = "forks";
     repo = "sympow";
     rev = "v${version}";
-    hash = "sha256-sex8gRiBdTcVMV3nSeiTYamAjPoXQdiiZwjRmeKA+mc=";
+    sha256 = "132l0xv00ld1svvv9wh99wfra4zzjv2885h2sq0dsl98wiyvi5zl";
   };
 
-  patches = [ ./clean-extra-logfile-output-from-pari.patch ];
+  patches = [
+    ./clean-extra-logfile-output-from-pari.patch
+    (fetchpatch {
+      name = "null-terminate-dupdirname.patch";
+      url = "https://gitlab.com/rezozer/forks/sympow/-/merge_requests/5.diff";
+      sha256 = "sha256-yKjio+qN9teL8L+mb7WOBN/iv545vRIxW20FJU37oO4=";
+    })
+  ];
 
   postUnpack = ''
     patchShebangs .
@@ -58,13 +64,19 @@ stdenv.mkDerivation rec {
   '';
 
   # Example from the README as a sanity check.
+  # sympow barely works on aarch64-darwin due to floating point black magic,
+  # but we ought to test at least the bare minimum.
   doInstallCheck = true;
   installCheckPhase = ''
-    export HOME=$TMPDIR
+    export HOME="$TMP/home"
+    mkdir -p "$HOME"
+  '' + (if (stdenv.isAarch64) then ''
+    "$out/bin/sympow" -curve "[1,2,3,4,5]" -moddeg | grep 'Modular Degree is 464'
+  '' else ''
     "$out/bin/sympow" -sp 2p16 -curve "[1,2,3,4,5]" | grep '8.3705'
-  '';
+  '');
 
-  meta = {
+  meta = with lib; {
     description = "Compute special values of symmetric power elliptic curve L-functions";
     mainProgram = "sympow";
     license = {
@@ -72,7 +84,7 @@ stdenv.mkDerivation rec {
       fullName = "Custom, BSD-like. See COPYING file.";
       free = true;
     };
-    maintainers = lib.teams.sage.members;
-    platforms = lib.platforms.linux;
+    maintainers = teams.sage.members;
+    platforms = platforms.unix;
   };
 }
