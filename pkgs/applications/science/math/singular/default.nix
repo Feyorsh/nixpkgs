@@ -21,7 +21,7 @@
 
 stdenv.mkDerivation rec {
   pname = "singular";
-  version = "4.4.0";
+  version = "4.3.2p16";
 
   # since the tarball does not contain tests, we fetch from GitHub.
   src = fetchFromGitHub {
@@ -31,7 +31,7 @@ stdenv.mkDerivation rec {
     # if a release is tagged (which sometimes does not happen), it will
     # be in the format below.
     rev = "Release-${lib.replaceStrings ["."] ["-"] version}";
-    sha256 = "sha256-wqzbk0Y50gacZ54POXgf6rMA0ecz87D+2mozMfn5uDc=";
+    sha256 = "sha256-5JZgI5lnfX4JlBSEAL7Wv6uao/57GBaMqwgslJt9Bjk=";
 
     # the repository's .gitattributes file contains the lines "/Tst/
     # export-ignore" and "/doc/ export-ignore" so some directories are
@@ -122,8 +122,7 @@ stdenv.mkDerivation rec {
     "Old/factor.tst"
     # tests that require gfanlib
     # requires "DivRemIdU", a syzextra (undocumented) command
-    # try to reenable this test once it gets stabilized
-    # "Short/ok_s.lst"
+    "Short/ok_s.lst"
   ];
 
   # simple test to make sure singular starts and finds its libraries
