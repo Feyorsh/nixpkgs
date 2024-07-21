@@ -26,6 +26,13 @@ stdenv.mkDerivation rec {
       sha256 = "sha256-Q3xBFED7XEAyNz6AHjzt63XtospmdGAIdS6iPq1C2UE=";
     })
 
+    (fetchpatch {
+      name = "infinity.patch";
+      url = "https://github.com/geogebra/giac/commit/851c2cd91e879c79d6652f8a5d5bed03b65c6d39.patch";
+      sha256 = "sha256-WJRT2b8I9kgAkRuIugMiXoF4hT7yR7qyad8A6IspNTM=";
+      stripLen = 5; extraPrefix = "/src/"; excludes = [ "src/kdisplay.cc" ];
+    })
+
     # giac calls scanf/printf with non-constant first arguments, which
     # the compiler rightfully warns about (with an error nowadays).
     (fetchpatch {
