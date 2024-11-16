@@ -9916,6 +9916,10 @@ self: super: with self; {
 
   pendulum = callPackage ../development/python-modules/pendulum { };
 
+  pennylane = callPackage ../development/python-modules/pennylane { };
+
+  pennylane-lightning = callPackage ../development/python-modules/pennylane-lightning { };
+
   pep440 = callPackage ../development/python-modules/pep440 { };
 
   pep517 = callPackage ../development/python-modules/pep517 { };
