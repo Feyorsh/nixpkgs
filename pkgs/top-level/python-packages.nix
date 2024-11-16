@@ -1044,6 +1044,8 @@ self: super: with self; {
 
   autopep8 = callPackage ../development/python-modules/autopep8 { };
 
+  autoray = callPackage ../development/python-modules/autoray { };
+
   autoslot = callPackage ../development/python-modules/autoslot { };
 
   avahi = toPythonModule (pkgs.avahi.override {
