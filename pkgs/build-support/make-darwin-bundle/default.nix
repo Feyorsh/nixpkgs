@@ -13,6 +13,7 @@
   name, # The name of the Application file.
   exec, # Executable file.
   icon ? "", # Optional icon file.
+  squircle ? true, # Optionally round the edges of the icon.
 }:
 
 writeShellScript "make-darwin-bundle-${name}" (''
@@ -24,7 +25,7 @@ writeShellScript "make-darwin-bundle-${name}" (''
       ln -s "${icon}" "''${!outputBin}/Applications/${name}.app/Contents/Resources"
     fi
 
-    ${writeDarwinBundle}/bin/write-darwin-bundle "''${!outputBin}" "${name}" "${exec}"
+    ${writeDarwinBundle}/bin/write-darwin-bundle "''${!outputBin}" "${name}" "${exec}" "${icon}" "${lib.boolToString squircle}"
   }
 
   appendToVar preDistPhases makeDarwinBundlePhase
