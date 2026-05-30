@@ -1,6 +1,7 @@
 {
   stdenv,
   lib,
+  buildPackages,
   fetchurl,
   coreutils,
   groff,
@@ -52,6 +53,18 @@ stdenv.mkDerivation (finalAttrs: {
     hash = "sha256-KVm3iGqsdhhbkK6gyfgNFDQ/YE3grpaz3Sp2D3qzvek=";
   };
 
+  postUnpack =
+    let
+      lua = fetchurl {
+        url = "https://www.lua.org/ftp/lua-5.4.8.tar.gz";
+        hash = "sha256-TxjdrhVOeT5G7qtyfFnvHAwMK3ROe5QhlxDXb1MGKa4=";
+      };
+    in
+    ''
+      mkdir -p NetHack-${finalAttrs.version}/lib
+      tar zxf ${lua} -C NetHack-${finalAttrs.version}/lib
+    '';
+
   buildInputs = [
     ncurses
   ]
@@ -100,15 +113,21 @@ stdenv.mkDerivation (finalAttrs: {
 
   postPatch = ''
     sed -e '/^ *cd /d' -i sys/unix/nethack.sh
-    sed -e '/rm -f $(MAKEDEFS)/d' -i sys/unix/Makefile.src
+    sed -e '/rm -f $(MAKEDEFS)/d' \
+        -e 's,^AR =.*,AR:=$(AR),' \
+        -i sys/unix/Makefile.src
     sed \
       -e 's,^CFLAGS=-g,CFLAGS=,' \
       -e 's,/bin/gzip,${gzip}/bin/gzip,g' \
       -e 's,^WINTTYLIB=.*,WINTTYLIB=-lncurses,' \
       -e 's,PKG_CONFIG_PATH=$(QTDIR)/lib/pkgconfig,,' \
+      -e 's,pkg-config,$(PKG_CONFIG),' \
       -e 's,NHCFLAGS+=-DCOMPRESS[^ ]*,NHCFLAGS+=-DCOMPRESS=\\"${gzip}/bin/gzip\\" \\\
         -DCOMPRESS_EXTENSION=\\".gz\\",' \
       -i sys/unix/hints/linux.500
+    # sed -e 's/^XTRASRC =/XTRASRC = tile.c/' \
+        # -e 's/^XTRAOBJ =/XTRAOBJ = tile.o/' \
+        # -i sys/unix/hints/include/multiw-2.500
     sed \
       -E 's/^(GDBPATH|GREPPATH)/#\1/' \
       -i sys/unix/sysconf
@@ -125,6 +144,21 @@ stdenv.mkDerivation (finalAttrs: {
     sed -e '/define CHDIR/d' \
         -e '/define ENHANCED_SYMBOLS/d' \
         -i include/config.h
+    sed -e 's,^AR=.*,AR:=$(AR) rcu,' \
+        -e 's,^RANLIB=.*,RANLIB:=$(RANLIB),' \
+        -i lib/lua-5.4.8/src/Makefile
+    ${lib.optionalString (stdenv.buildPlatform != stdenv.hostPlatform) ''
+      sed -e 's, ../util/makedefs,,' \
+          -e 's,\t../util/makedefs,\t${buildPackages.nethack}/libexec/nethack/makedefs,' \
+          -e 's,\t../util/dlb,\t${buildPackages.nethack}/libexec/nethack/dlb,' \
+          -e 's,\t./tilemap,\t${buildPackages.nethack}/libexec/nethack/tilemap,' \
+          -e 's,../util/dlb cf nhdat,${buildPackages.nethack}/libexec/nethack/dlb cf nhdat,' \
+          -e 's,pkg-config,$(PKG_CONFIG),' \
+          -i sys/unix/Makefile.*
+      sed -e 's,../util/tile2x11,${buildPackages.nethack}/libexec/nethack/tile2x11,' \
+          -e 's,../util/tile2bmp,${buildPackages.nethack}/libexec/nethack/tile2bmp,' \
+          -i dat/Makefile
+    ''}
     ${lib.optionalString qtMode ''
       sed -e 's,^QTDIR *=.*,QTDIR=${qt5.qtbase.dev},' \
           -i sys/unix/hints/linux.500
@@ -134,23 +168,13 @@ stdenv.mkDerivation (finalAttrs: {
     ''}
   '';
 
+  installTargets = "install tileutils";
+
   configurePhase = ''
     pushd sys/unix
     sh setup.sh hints/${hint}
     popd
   '';
-
-  preBuild =
-    let
-      lua548 = fetchurl {
-        url = "https://www.lua.org/ftp/lua-5.4.8.tar.gz";
-        hash = "sha256-TxjdrhVOeT5G7qtyfFnvHAwMK3ROe5QhlxDXb1MGKa4=";
-      };
-    in
-    ''
-      mkdir -p lib
-      tar zxf ${lua548} -C lib
-    '';
 
   # https://github.com/NixOS/nixpkgs/issues/294751
   enableParallelBuilding = false;
@@ -198,7 +222,13 @@ stdenv.mkDerivation (finalAttrs: {
     fi
     EOF
     chmod +x $out/bin/nethack
-    install -Dm 555 util/makedefs -t $out/libexec/nethack/
+    ${lib.optionalString (
+      stdenv.buildPlatform == stdenv.hostPlatform
+    )
+    ''
+      install -Dm 555 util/makedefs -t $out/libexec/nethack/
+      install -Dm 555 util/tilemap -t $out/libexec/nethack/
+    ''}
     ${lib.optionalString (!(x11Mode || qtMode)) "install -Dm 555 util/dlb -t $out/libexec/nethack/"}
   '';
 
