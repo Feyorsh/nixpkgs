@@ -105,7 +105,6 @@ stdenv.mkDerivation (finalAttrs: {
       -e 's,^CFLAGS=-g,CFLAGS=,' \
       -e 's,/bin/gzip,${gzip}/bin/gzip,g' \
       -e 's,^WINTTYLIB=.*,WINTTYLIB=-lncurses,' \
-      -e 's,^QTDIR *=.*,QTDIR=${qt5.qtbase.dev},' \
       -e 's,PKG_CONFIG_PATH=$(QTDIR)/lib/pkgconfig,,' \
       -e 's,NHCFLAGS+=-DCOMPRESS[^ ]*,NHCFLAGS+=-DCOMPRESS=\\"${gzip}/bin/gzip\\" \\\
         -DCOMPRESS_EXTENSION=\\".gz\\",' \
@@ -119,8 +118,6 @@ stdenv.mkDerivation (finalAttrs: {
       -e 's,^CFLAGS+=-DCRASHREPORT,#CFLAGS+=-DCRASHREPORT,' \
       -e 's,^NHCFLAGS+=-DGREPPATH,#NHCFLAGS+=-DGREPPATH,' \
       -e 's,/usr/bin/true,${coreutils}/bin/true,g' \
-      -e 's,^endif   # QTDIR,endif   # QTDIR \
-            QTDIR=${qt5.qtbase.dev},' \
       -e 's,PKG_CONFIG_PATH=$(QTDIR)/lib/pkgconfig,,' \
       -e 's,NHCFLAGS+=-DCOMPRESS[^ ]*,NHCFLAGS+=-DCOMPRESS=\\"${gzip}/bin/gzip\\" \\\
         -DCOMPRESS_EXTENSION=\\".gz\\",' \
@@ -128,6 +125,13 @@ stdenv.mkDerivation (finalAttrs: {
     sed -e '/define CHDIR/d' \
         -e '/define ENHANCED_SYMBOLS/d' \
         -i include/config.h
+    ${lib.optionalString qtMode ''
+      sed -e 's,^QTDIR *=.*,QTDIR=${qt5.qtbase.dev},' \
+          -i sys/unix/hints/linux.500
+      sed -e 's,^endif   # QTDIR,endif   # QTDIR \
+                QTDIR=${qt5.qtbase.dev},' \
+          -i sys/unix/hints/macOS.500
+    ''}
   '';
 
   configurePhase = ''
