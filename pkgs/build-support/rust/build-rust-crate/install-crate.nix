@@ -16,7 +16,7 @@ if !buildTests then
     if [[ "$(ls -A target/lib)" ]]; then
       mkdir -p $lib/lib
       cp -r target/lib/* $lib/lib #*/
-      for library in $lib/lib/*.so $lib/lib/*.dylib; do #*/
+      for library in $lib/lib/*.so $lib/lib/*.dylib $lib/lib/*.wasm; do #*/
         ln -s $library $(echo $library | sed -e "s/-${metadata}//")
       done
     fi
